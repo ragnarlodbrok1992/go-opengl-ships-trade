@@ -81,9 +81,9 @@ var vertexShader = `
   in vec3 vert;
   in vec2 vertTexCoord;
 
-  out vec2 fragTextCoord;
+  out vec2 fragTexCoord;
 
-  void main {
+  void main() {
     fragTexCoord = vertTexCoord;
     gl_Position = projection * camera * model * vec4(vert, 1);
   }
@@ -181,6 +181,48 @@ func main() {
   gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
   gl.BufferData(gl.ARRAY_BUFFER, len(cubeVertices) * 4, gl.Ptr(cubeVertices), gl.STATIC_DRAW)
 
+  vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vert\x00")))
+  gl.EnableVertexAttribArray(vertAttrib)
+  gl.VertexAttribPointerWithOffset(vertAttrib, 3, gl.FLOAT, false, 5 * 4, 0)
+
+  texCoordAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vertTexCoord\x00")))
+  gl.EnableVertexAttribArray(texCoordAttrib)
+  gl.VertexAttribPointerWithOffset(texCoordAttrib, 2, gl.FLOAT, false, 5 * 4, 3 * 4)
+
+  // Configure global settings
+  gl.Enable(gl.DEPTH_TEST)
+  gl.DepthFunc(gl.LESS)
+  gl.ClearColor(1.0, 1.0, 1.0, 1.0)
+
+  angle := 0.0
+  previousTime := glfw.GetTime()
+
+  for !window.ShouldClose() {
+    gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    // Update
+    time := glfw.GetTime()
+    elapsed := time - previousTime
+    previousTime = time
+
+    angle += elapsed
+    model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
+
+    // Render
+    gl.UseProgram(program)
+    gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
+
+    gl.BindVertexArray(vao)
+
+    gl.ActiveTexture(gl.TEXTURE0)
+    gl.BindTexture(gl.TEXTURE_2D, texture)
+
+    gl.DrawArrays(gl.TRIANGLES, 0, 6 * 2 * 3)
+
+    // Maintenance
+    window.SwapBuffers()
+    glfw.PollEvents()
+  }
 
 }
 
@@ -241,7 +283,7 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
     log := strings.Repeat("\x00", int(logLength + 1))
     gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
 
-    return 0, fmt.Errorf("failed to compiler: %v", source, log)
+    return 0, fmt.Errorf("failed to compile: %v", source, log)
   }
 
   return shader, nil
