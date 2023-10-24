@@ -1,4 +1,4 @@
-module example/hello
+module go-opengl-ships-trade
 
 go 1.21.3
 
