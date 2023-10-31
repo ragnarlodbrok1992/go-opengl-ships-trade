@@ -87,22 +87,25 @@ func main() {
   // Heap based camera
   camera_ := new(camera_pack.Camera)
 
-  camera_.eye_x = 3.0
-  camera_.eye_y = 3.0
-  camera_.eye_z = 3.0
+  camera_.Eye_x = 3.0
+  camera_.Eye_y = 3.0
+  camera_.Eye_z = 3.0
 
-  camera_.center_x = 0.0
-  camera_.center_y = 0.0
-  camera_.center_z = 0.0
+  camera_.Center_x = 0.0
+  camera_.Center_y = 0.0
+  camera_.Center_z = 0.0
 
-  camera_.up_x = 0.0
-  camera_.up_y = 1.0
-  camera_.up_z = 0.0
+  camera_.Up_x = 0.0
+  camera_.Up_y = 1.0
+  camera_.Up_z = 0.0
 
   // @TODO: change camera to be flexible and shit
-  camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3},
-                          mgl32.Vec3{0, 0, 0},
-                          mgl32.Vec3{0, 1, 0})
+  // camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3},
+  //                         mgl32.Vec3{0, 0, 0},
+  //                         mgl32.Vec3{0, 1, 0})
+
+  // Initializing using camera that lives on a heap happily ever after
+
   cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
   gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
