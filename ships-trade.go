@@ -14,96 +14,14 @@ import (
   "github.com/go-gl/mathgl/mgl32"
 
   "go-opengl-ships-trade/src/graphics"
+  cube "go-opengl-ships-trade/entities/cube"
+  shaders "go-opengl-ships-trade/src/graphics/shaders"
+  camera_pack "go-opengl-ships-trade/src/graphics/camera"
   // "go-opengl-ships-trade/src/helpers"
-  // "go-opengl-ships-trade/entities/cube"
 )
 
 const WINDOW_WIDTH = 1024
 const WINDOW_HEIGHT = 768
-
-var cubeVertices = []float32{
-	//  X, Y, Z, U, V
-	// Bottom
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-
-	// Top
-	-1.0, 1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, -1.0, 1.0, 0.0,
-	1.0, 1.0, -1.0, 1.0, 0.0,
-	-1.0, 1.0, 1.0, 0.0, 1.0,
-	1.0, 1.0, 1.0, 1.0, 1.0,
-
-	// Front
-	-1.0, -1.0, 1.0, 1.0, 0.0,
-	1.0, -1.0, 1.0, 0.0, 0.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, 1.0, 0.0, 0.0,
-	1.0, 1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-
-	// Back
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	-1.0, 1.0, -1.0, 0.0, 1.0,
-	1.0, 1.0, -1.0, 1.0, 1.0,
-
-	// Left
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, -1.0, 1.0, 0.0,
-	-1.0, -1.0, -1.0, 0.0, 0.0,
-	-1.0, -1.0, 1.0, 0.0, 1.0,
-	-1.0, 1.0, 1.0, 1.0, 1.0,
-	-1.0, 1.0, -1.0, 1.0, 0.0,
-
-	// Right
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	1.0, -1.0, -1.0, 1.0, 0.0,
-	1.0, 1.0, -1.0, 0.0, 0.0,
-	1.0, -1.0, 1.0, 1.0, 1.0,
-	1.0, 1.0, -1.0, 0.0, 0.0,
-	1.0, 1.0, 1.0, 0.0, 1.0,
-}
-
-
-var vertexShader = `
-  #version 330
-
-  uniform mat4 projection;
-  uniform mat4 camera;
-  uniform mat4 model;
-
-  in vec3 vert;
-  in vec2 vertTexCoord;
-
-  out vec2 fragTexCoord;
-
-  void main() {
-    fragTexCoord = vertTexCoord;
-    gl_Position = projection * camera * model * vec4(vert, 1);
-  }
-` + "\x00"
-
-var fragmentShader = `
-  #version 330
-
-  uniform sampler2D tex;
-
-  in vec2 fragTexCoord;
-
-  out vec4 outputColor;
-
-  void main() {
-    outputColor = texture(tex, fragTexCoord);
-  }
-` + "\x00"
 
 func key_callback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
   // DEBUG
@@ -154,7 +72,7 @@ func main() {
   fmt.Println("OpenGL version", version)
 
   // Configure the vertex and fragment shaders
-  program, err := graphics.NewProgram(vertexShader, fragmentShader)
+  program, err := graphics.NewProgram(shaders.VertexShader, shaders.FragmentShader)
   if err != nil {
     panic(err)
   }
@@ -166,7 +84,25 @@ func main() {
   projectionUniform := gl.GetUniformLocation(program, gl.Str("projection\x00"))
   gl.UniformMatrix4fv(projectionUniform, 1, false, &projection[0])
 
-  camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, mgl32.Vec3{0, 0, 0}, mgl32.Vec3{0, 1, 0})
+  // Heap based camera
+  camera_ := new(camera_pack.Camera)
+
+  camera_.eye_x = 3.0
+  camera_.eye_y = 3.0
+  camera_.eye_z = 3.0
+
+  camera_.center_x = 0.0
+  camera_.center_y = 0.0
+  camera_.center_z = 0.0
+
+  camera_.up_x = 0.0
+  camera_.up_y = 1.0
+  camera_.up_z = 0.0
+
+  // @TODO: change camera to be flexible and shit
+  camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3},
+                          mgl32.Vec3{0, 0, 0},
+                          mgl32.Vec3{0, 1, 0})
   cameraUniform := gl.GetUniformLocation(program, gl.Str("camera\x00"))
   gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
@@ -193,7 +129,7 @@ func main() {
   var vbo uint32
   gl.GenBuffers(1, &vbo)
   gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-  gl.BufferData(gl.ARRAY_BUFFER, len(cubeVertices) * 4, gl.Ptr(cubeVertices), gl.STATIC_DRAW)
+  gl.BufferData(gl.ARRAY_BUFFER, len(cube.CubeVertices) * 4, gl.Ptr(cube.CubeVertices), gl.STATIC_DRAW)
 
   vertAttrib := uint32(gl.GetAttribLocation(program, gl.Str("vert\x00")))
   gl.EnableVertexAttribArray(vertAttrib)
@@ -217,9 +153,14 @@ func main() {
     elapsed := time - previousTime
     previousTime = time
 
+    // Unused variables ignore
+    _ = elapsed
+    _ = angle
+
     // Simulate
-    angle += elapsed
-    model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
+    // angle += elapsed
+    // We are rotating model - let's not
+    // model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
 
     // Render
     // Clear screen
