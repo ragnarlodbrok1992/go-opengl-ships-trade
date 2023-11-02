@@ -23,13 +23,21 @@ import (
 const WINDOW_WIDTH = 1024
 const WINDOW_HEIGHT = 768
 
+// Camera inputs will be global
+// @TODO enum for checking inputs
+
 func key_callback(window *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
   // DEBUG
-  fmt.Println("Pressing key!")
+  // fmt.Println("Pressing key!")
 
   // Escaping engine
   if key == glfw.KeyEscape && action == glfw.Press {
     window.SetShouldClose(true)
+  }
+
+  // Check if camera is moving
+  if action == glfw.Press {
+
   }
 } 
 
@@ -100,9 +108,13 @@ func main() {
   camera_.Up_z = 0.0
 
   // @TODO: change camera to be flexible and shit
-  // camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3},
-  //                         mgl32.Vec3{0, 0, 0},
-  //                         mgl32.Vec3{0, 1, 0})
+  // camera := mgl32.LookAtV(mgl32.Vec3{3, 3, 3}, // Eye
+  //                         mgl32.Vec3{0, 0, 0}, // Center
+  //                         mgl32.Vec3{0, 1, 0}) // Up
+
+  camera := mgl32.LookAtV(mgl32.Vec3{camera_.Eye_x, camera_.Eye_y, camera_.Eye_z},
+                          mgl32.Vec3{camera_.Center_x, camera_.Center_y, camera_.Center_z},
+                          mgl32.Vec3{camera_.Up_x, camera_.Up_y, camera_.Up_z})
 
   // Initializing using camera that lives on a heap happily ever after
 
@@ -156,6 +168,10 @@ func main() {
     elapsed := time - previousTime
     previousTime = time
 
+    camera := mgl32.LookAtV(mgl32.Vec3{camera_.Eye_x, camera_.Eye_y, camera_.Eye_z},
+                            mgl32.Vec3{camera_.Center_x, camera_.Center_y, camera_.Center_z},
+                            mgl32.Vec3{camera_.Up_x, camera_.Up_y, camera_.Up_z})
+
     // Unused variables ignore
     _ = elapsed
     _ = angle
@@ -165,9 +181,15 @@ func main() {
     // We are rotating model - let's not
     // model = mgl32.HomogRotate3D(float32(angle), mgl32.Vec3{0, 1, 0})
 
+    // DEBUG test
+    // camera_.Center_x += 0.001 // IT MOVES! yeah
+
     // Render
     // Clear screen
     gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+    // Update camera
+    gl.UniformMatrix4fv(cameraUniform, 1, false, &camera[0])
 
     gl.UseProgram(program)
     gl.UniformMatrix4fv(modelUniform, 1, false, &model[0])
